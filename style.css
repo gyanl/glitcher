@@ -629,13 +629,32 @@ h1 {
    Responsive
    =========================== */
 @media (max-width: 768px) {
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-bottom: 0;
+    overflow: hidden;
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .text-wrapper {
+    flex: 0 0 60vh;
+    flex: 0 0 60dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+
   h1 {
     font-size: 48px;
   }
 
   .chroma-layer,
-  .glitch-layer,
-  .reflection {
+  .glitch-layer {
     font-size: 48px;
   }
 
@@ -646,7 +665,10 @@ h1 {
     right: 0 !important;
     left: 0 !important;
     width: 100%;
-    max-height: 50vh;
+    height: 40vh;
+    height: 40dvh;
+    max-height: 40vh;
+    max-height: 40dvh;
     border-radius: 16px 16px 0 0;
     border-bottom: none;
   }
@@ -659,8 +681,24 @@ h1 {
     display: none;
   }
 
-  body {
-    padding-bottom: 48px;
+  .ctrl-row {
+    padding: 8px 0;
+  }
+
+  .fx-item {
+    padding: 6px 0;
+  }
+
+  .fx-header {
+    padding: 6px 0;
+  }
+
+  .fx-options .ctrl-row {
+    padding: 6px 0;
+  }
+
+  .section-header {
+    padding: 12px 16px;
   }
 }
 
@@ -670,13 +708,8 @@ h1 {
   }
 
   .chroma-layer,
-  .glitch-layer,
-  .reflection {
+  .glitch-layer {
     font-size: 32px;
-  }
-
-  .panel {
-    max-height: 60vh;
   }
 
   .ctrl-label {
