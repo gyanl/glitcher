@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glitcher</title>
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=TASA+Explorer:wght@600&family=Hanken+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/fill/style.css">
+</head>
+
+<body>
+  <div class="noise" id="noise"></div>
+  <div class="scanlines" id="scanlines"></div>
+  <canvas id="particles"></canvas>
+
+  <div class="text-wrapper" id="text-wrapper">
+    <div class="glow-pulse" id="glow-pulse"></div>
+    <div style="position: relative; display: inline-block;">
+      <h1 contenteditable="true" spellcheck="false" id="heading">Glitcher</h1>
+      <span class="chroma-layer chroma-r" id="chroma-r" aria-hidden="true">Glitcher</span>
+      <span class="chroma-layer chroma-b" id="chroma-b" aria-hidden="true">Glitcher</span>
+      <span class="glitch-layer" id="glitch-1" aria-hidden="true">Glitcher</span>
+      <span class="glitch-layer" id="glitch-2" aria-hidden="true">Glitcher</span>
+    </div>
+  </div>
+
+  <!-- ====== Floating Panel ====== -->
+  <div class="panel" id="panel">
+    <div class="panel-handle" id="panel-handle">
+      <span class="panel-title">Controls</span>
+      <span class="panel-drag-dots"><span></span><span></span><span></span></span>
+    </div>
+    <div class="panel-body">
+
+      <!-- ── Style ── -->
+      <div class="section open" id="sec-style">
+        <div class="section-header" data-section="sec-style">
+          <span class="section-name"><i class="ph-fill ph-palette"></i> Style</span>
+        </div>
+        <div class="section-content">
+          <div class="ctrl-row">
+            <span class="ctrl-label">Color 1</span>
+            <input type="color" id="ctrl-color1" value="#ff00ff">
+          </div>
+          <div class="ctrl-row">
+            <span class="ctrl-label">Color 2</span>
+            <input type="color" id="ctrl-color2" value="#00ffff">
+          </div>
+          <div class="ctrl-row">
+            <span class="ctrl-label">Text</span>
+            <input type="color" id="ctrl-text-color" value="#0a0a0a">
+          </div>
+          <div class="ctrl-row">
+            <span class="ctrl-label">Background</span>
+            <input type="color" id="ctrl-bg-color" value="#0a0a0a">
+          </div>
+          <div class="ctrl-row">
+            <span class="ctrl-label">Size</span>
+            <input type="range" id="ctrl-size" min="48" max="200" value="96" step="1">
+            <span class="ctrl-val" id="val-size">96px</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Effects ── -->
+      <div class="section open" id="sec-effects">
+        <div class="section-header" data-section="sec-effects">
+          <span class="section-name"><i class="ph-fill ph-magic-wand"></i> Effects</span>
+        </div>
+        <div class="section-content">
+
+          <!-- Outline -->
+          <div class="fx-item active" id="fx-outline">
+            <div class="fx-header"><i class="ph-fill ph-text-aa"></i><span class="fx-name">Outline</span><button
+                class="fx-switch" style="background:rgba(255,255,255,0.2)"></button></div>
+            <div class="fx-options">
+              <div class="ctrl-row"><span class="ctrl-label">Stroke</span><input type="range" id="ctrl-stroke" min="1"
+                  max="8" value="3" step="0.5"><span class="ctrl-val" id="val-stroke">3px</span></div>
+              <div class="ctrl-row"><span class="ctrl-label">Animate</span><button class="fx-switch"
+                  id="toggle-outline-anim" style="background:rgba(255,255,255,0.2)"></button></div>
+              <div class="ctrl-row" id="row-outline-speed"><span class="ctrl-label">Speed</span><input type="range"
+                  id="ctrl-speed" min="0.5" max="10" value="3" step="0.5"><span class="ctrl-val"
+                  id="val-speed">3s</span></div>
+            </div>
+          </div>
+
+          <!-- Shadows -->
+          <div class="fx-item active" id="fx-shadows">
+            <div class="fx-header"><i class="ph-fill ph-drop-half-bottom"></i><span
+                class="fx-name">Shadows</span><button class="fx-switch"
+                style="background:rgba(255,255,255,0.2)"></button></div>
+            <div class="fx-options">
+              <div class="ctrl-row"><span class="ctrl-label">Count</span><input type="range" id="ctrl-shadows" min="1"
+                  max="6" value="3" step="1"><span class="ctrl-val" id="val-shadows">3</span></div>
+              <div class="ctrl-row"><span class="ctrl-label">Spread</span><input type="range" id="ctrl-spread"
+                  min="0.2" max="3" value="1" step="0.1"><span class="ctrl-val" id="val-spread">1.0</span></div>
+              <div class="ctrl-row"><span class="ctrl-label">Blur</span><input type="range" id="ctrl-blur" min="0"
+                  max="20" value="0" step="1"><span class="ctrl-val" id="val-blur">0px</span></div>
+              <div class="ctrl-row"><span class="ctrl-label">Fade</span><input type="range" id="ctrl-fade" min="0"
+                  max="100" value="0" step="5"><span class="ctrl-val" id="val-fade">0%</span></div>
+            </div>
+          </div>
+
+          <!-- Glitch -->
+          <div class="fx-item" id="fx-glitch">
+            <div class="fx-header"><i class="ph-fill ph-lightning"></i><span class="fx-name">Glitch</span><button
+                class="fx-switch"></button></div>
+            <div class="fx-options">
+              <div class="ctrl-row"><span class="ctrl-label">Intensity</span><input type="range"
+                  id="ctrl-glitch-intensity" min="0.1" max="1" value="0.8" step="0.1"><span class="ctrl-val"
+                  id="val-glitch-intensity">0.8</span></div>
+              <div class="ctrl-row"><span class="ctrl-label">Speed</span><input type="range" id="ctrl-glitch-speed"
+                  min="0.05" max="1" value="0.3" step="0.05"><span class="ctrl-val" id="val-glitch-speed">0.3s</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chroma -->
+          <div class="fx-item" id="fx-chroma">
+            <div class="fx-header"><i class="ph-fill ph-aperture"></i><span class="fx-name">Chromatic
+                Aberration</span><button class="fx-switch"></button></div>
+            <div class="fx-options">
+              <div class="ctrl-row"><span class="ctrl-label">Strength</span><input type="range"
+                  id="ctrl-chroma-strength" min="0.1" max="3" value="0.8" step="0.1"><span class="ctrl-val"
+                  id="val-chroma-strength">0.8</span></div>
+              <div class="ctrl-row"><span class="ctrl-label">Opacity</span><input type="range" id="ctrl-chroma-opacity"
+                  min="0.1" max="1" value="0.6" step="0.1"><span class="ctrl-val" id="val-chroma-opacity">0.6</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scanlines -->
+          <div class="fx-item" id="fx-scanlines">
+            <div class="fx-header"><i class="ph-fill ph-monitor"></i><span class="fx-name">Scanlines</span><button
+                class="fx-switch"></button></div>
+            <div class="fx-options">
+              <div class="ctrl-row"><span class="ctrl-label">Opacity</span><input type="range"
+                  id="ctrl-scanlines-opacity" min="0.05" max="0.5" value="0.15" step="0.05"><span class="ctrl-val"
+                  id="val-scanlines-opacity">0.15</span></div>
+              <div class="ctrl-row"><span class="ctrl-label">Gap</span><input type="range" id="ctrl-scanlines-gap"
+                  min="2" max="10" value="4" step="1"><span class="ctrl-val" id="val-scanlines-gap">4px</span></div>
+            </div>
+          </div>
+
+          <!-- Flicker -->
+          <div class="fx-item" id="fx-flicker">
+            <div class="fx-header"><i class="ph-fill ph-lightbulb"></i><span class="fx-name">Flicker</span><button
+                class="fx-switch"></button></div>
+            <div class="fx-options">
+              <div class="ctrl-row"><span class="ctrl-label">Speed</span><input type="range" id="ctrl-flicker-speed"
+                  min="0.5" max="5" value="2" step="0.5"><span class="ctrl-val" id="val-flicker-speed">2s</span></div>
+            </div>
+          </div>
+
+          <!-- Glow -->
+          <div class="fx-item" id="fx-glow">
+            <div class="fx-header"><i class="ph-fill ph-sun"></i><span class="fx-name">Glow Pulse</span><button
+                class="fx-switch"></button></div>
+            <div class="fx-options">
+              <div class="ctrl-row"><span class="ctrl-label">Intensity</span><input type="range"
+                  id="ctrl-glow-intensity" min="0.05" max="0.5" value="0.2" step="0.05"><span class="ctrl-val"
+                  id="val-glow-intensity">0.2</span></div>
+              <div class="ctrl-row"><span class="ctrl-label">Speed</span><input type="range" id="ctrl-glow-speed"
+                  min="0.5" max="6" value="2" step="0.5"><span class="ctrl-val" id="val-glow-speed">2s</span></div>
+              <div class="ctrl-row"><span class="ctrl-label">Size</span><input type="range" id="ctrl-glow-size" min="10"
+                  max="100" value="40" step="5"><span class="ctrl-val" id="val-glow-size">40px</span></div>
+            </div>
+          </div>
+
+          <!-- Noise -->
+          <div class="fx-item" id="fx-noise">
+            <div class="fx-header"><i class="ph-fill ph-grain"></i><span class="fx-name">Noise</span><button
+                class="fx-switch"></button></div>
+            <div class="fx-options">
+              <div class="ctrl-row"><span class="ctrl-label">Opacity</span><input type="range" id="ctrl-noise-opacity"
+                  min="0.1" max="1" value="0.4" step="0.05"><span class="ctrl-val" id="val-noise-opacity">0.4</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3D Tilt -->
+          <div class="fx-item" id="fx-3d">
+            <div class="fx-header"><i class="ph-fill ph-cube"></i><span class="fx-name">3D Tilt</span><button
+                class="fx-switch"></button></div>
+            <div class="fx-options">
+              <div class="ctrl-row"><span class="ctrl-label">Range</span><input type="range" id="ctrl-3d-range" min="5"
+                  max="60" value="25" step="5"><span class="ctrl-val" id="val-3d-range">25&deg;</span></div>
+            </div>
+          </div>
+
+          <!-- Magnetic -->
+          <div class="fx-item" id="fx-magnetic">
+            <div class="fx-header"><i class="ph-fill ph-magnet-straight"></i><span
+                class="fx-name">Magnetic</span><button class="fx-switch"></button></div>
+            <div class="fx-options">
+              <div class="ctrl-row"><span class="ctrl-label">Strength</span><input type="range" id="ctrl-mag-strength"
+                  min="5" max="80" value="30" step="5"><span class="ctrl-val" id="val-mag-strength">30</span></div>
+              <div class="ctrl-row"><span class="ctrl-label">Radius</span><input type="range" id="ctrl-mag-radius"
+                  min="100" max="800" value="400" step="50"><span class="ctrl-val" id="val-mag-radius">400px</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Particles -->
+          <div class="fx-item" id="fx-particles">
+            <div class="fx-header"><i class="ph-fill ph-sparkle"></i><span class="fx-name">Particles</span><button
+                class="fx-switch"></button></div>
+            <div class="fx-options">
+              <div class="ctrl-row"><span class="ctrl-label">Density</span><input type="range" id="ctrl-part-density"
+                  min="1" max="8" value="2" step="1"><span class="ctrl-val" id="val-part-density">2</span></div>
+              <div class="ctrl-row"><span class="ctrl-label">Size</span><input type="range" id="ctrl-part-size" min="1"
+                  max="6" value="2" step="0.5"><span class="ctrl-val" id="val-part-size">2px</span></div>
+              <div class="ctrl-row"><span class="ctrl-label">Life</span><input type="range" id="ctrl-part-life"
+                  min="0.5" max="3" value="1" step="0.25"><span class="ctrl-val" id="val-part-life">1.0</span></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // ============================
+    // DOM refs
+    // ============================
+    const h1 = document.getElementById('heading');
+    const root = document.documentElement;
+    const wrapper = document.getElementById('text-wrapper');
+    const chromaR = document.getElementById('chroma-r');
+    const chromaB = document.getElementById('chroma-b');
+    const glitch1 = document.getElementById('glitch-1');
+    const glitch2 = document.getElementById('glitch-2');
+    const glowPulse = document.getElementById('glow-pulse');
+    const noiseEl = document.getElementById('noise');
+    const scanlinesEl = document.getElementById('scanlines');
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+
+    // ============================
+    // State
+    // ============================
+    const S = {
+      color1: '#ff00ff', color2: '#00ffff',
+      shadowCount: 3, spread: 1, blur: 0, fade: 0,
+      outline: true, outlineAnimOn: true, shadows: true,
+      glitch: false, chroma: false, scanlines: false, flicker: false,
+      glow: false, noise: false, tilt3d: false,
+      magnetic: false, particles: false,
+      // Params
+      glitchIntensity: 0.8, glitchSpeed: 0.3,
+      chromaStrength: 0.8, chromaOpacity: 0.6,
+      scanlinesOpacity: 0.15, scanlinesGap: 4,
+      flickerSpeed: 2,
+      glowIntensity: 0.2, glowSpeed: 2, glowSize: 40,
+      noiseOpacity: 0.4,
+      tilt3dRange: 25,
+      magStrength: 30, magRadius: 400,
+      partDensity: 2, partSize: 2, partLife: 1,
+    };
+
+    let lastDx = 0, lastDy = 0;
+    let targetTx = 0, targetTy = 0, currentTx = 0, currentTy = 0;
+    let particlesList = [];
+
+    // ============================
+    // Helpers
+    // ============================
+    function parseHex(hex) {
+      return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+    }
+
+    function lerpColor(a, b, t) {
+      const c1 = parseHex(a), c2 = parseHex(b);
+      return [
+        Math.round(c1[0] + (c2[0] - c1[0]) * t),
+        Math.round(c1[1] + (c2[1] - c1[1]) * t),
+        Math.round(c1[2] + (c2[2] - c1[2]) * t),
+      ];
+    }
+
+    function syncText() {
+      const t = h1.textContent;
+      [chromaR, chromaB, glitch1, glitch2].forEach(el => el.textContent = t);
+    }
+    h1.addEventListener('input', syncText);
+
+    function rebuildAnimation() {
+      const parts = [];
+      if (S.outline && S.outlineAnimOn) {
+        parts.push(`rotate-gradient ${document.getElementById('ctrl-speed').value}s linear infinite`);
+      }
+      if (S.flicker) parts.push(`flicker ${S.flickerSpeed}s infinite`);
+      h1.style.animation = parts.length ? parts.join(', ') : 'none';
+    }
+
+    function updateShadows() {
+      if (!S.shadows) return;
+      const shadows = Array.from({ length: S.shadowCount }, (_, i) => {
+        const m = (i + 1) * S.spread;
+        const t = S.shadowCount === 1 ? 0 : i / (S.shadowCount - 1);
+        const [r, g, b] = lerpColor(S.color1, S.color2, t);
+        const op = S.fade > 0 ? 1 - (i / S.shadowCount) * (S.fade / 100) : 1;
+        const bl = S.blur > 0 ? Math.round((i / S.shadowCount) * S.blur) : 0;
+        return `${lastDx * m}px ${lastDy * m}px ${bl}px rgba(${r},${g},${b},${op})`;
+      }).join(', ');
+      h1.style.textShadow = shadows;
+    }
+
+    // ============================
+    // Mouse
+    // ============================
+    document.addEventListener('mousemove', (e) => {
+      const rect = h1.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+      lastDx = (e.clientX - cx) / window.innerWidth * 20;
+      lastDy = (e.clientY - cy) / window.innerHeight * 20;
+      updateShadows();
+
+      if (S.chroma) {
+        const ox = lastDx * S.chromaStrength, oy = lastDy * S.chromaStrength;
+        chromaR.style.transform = `translate(${ox}px,${oy}px)`;
+        chromaB.style.transform = `translate(${-ox}px,${-oy}px)`;
+      }
+      if (S.tilt3d) {
+        const rx = -(e.clientY - cy) / window.innerHeight * S.tilt3dRange;
+        const ry = (e.clientX - cx) / window.innerWidth * S.tilt3dRange;
+        h1.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
+      }
+      if (S.magnetic) {
+        const dx = cx - e.clientX, dy = cy - e.clientY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < S.magRadius) {
+          const str = (1 - dist / S.magRadius) * S.magStrength;
+          targetTx = -(dx / dist) * str; targetTy = -(dy / dist) * str;
+        } else { targetTx = 0; targetTy = 0; }
+      } else { targetTx = 0; targetTy = 0; }
+
+      if (S.particles) {
+        for (let i = 0; i < S.partDensity; i++) {
+          const se = S.shadowCount * S.spread;
+          particlesList.push({
+            x: rect.left + rect.width / 2 + lastDx * se * (1 + Math.random()),
+            y: rect.top + rect.height / 2 + lastDy * se * (1 + Math.random()),
+            vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2 - 1,
+            life: S.partLife, maxLife: S.partLife,
+            decay: 0.01 + Math.random() * 0.02,
+            size: 1 + Math.random() * S.partSize,
+            color: Math.random() > 0.5 ? S.color1 : S.color2,
+          });
+        }
+      }
+    });
+
+    // Magnetic loop
+    (function magLoop() {
+      currentTx += (targetTx - currentTx) * 0.1; currentTy += (targetTy - currentTy) * 0.1;
+      if (S.magnetic || Math.abs(currentTx) > 0.1 || Math.abs(currentTy) > 0.1)
+        wrapper.style.transform = `translate(${currentTx}px,${currentTy}px)`;
+      requestAnimationFrame(magLoop);
+    })();
+
+    // Particles loop
+    function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    resizeCanvas(); window.addEventListener('resize', resizeCanvas);
+
+    (function partLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let i = particlesList.length - 1; i >= 0; i--) {
+        const p = particlesList[i]; p.x += p.vx; p.y += p.vy; p.life -= p.decay;
+        if (p.life <= 0) { particlesList.splice(i, 1); continue; }
+        const [r, g, b] = parseHex(p.color); const a = p.life / p.maxLife;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size * a, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${r},${g},${b},${a})`; ctx.fill();
+      }
+      requestAnimationFrame(partLoop);
+    })();
+
+    // ============================
+    // Panel drag
+    // ============================
+    {
+      const panel = document.getElementById('panel');
+      const handle = document.getElementById('panel-handle');
+      let dragging = false, ox, oy;
+      handle.addEventListener('mousedown', (e) => {
+        dragging = true; ox = e.clientX - panel.offsetLeft; oy = e.clientY - panel.offsetTop;
+        document.body.style.userSelect = 'none';
+      });
+      document.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        panel.style.left = Math.max(0, Math.min(window.innerWidth - panel.offsetWidth, e.clientX - ox)) + 'px';
+        panel.style.top = Math.max(0, Math.min(window.innerHeight - panel.offsetHeight, e.clientY - oy)) + 'px';
+        panel.style.right = 'auto';
+      });
+      document.addEventListener('mouseup', () => { dragging = false; document.body.style.userSelect = ''; });
+    }
+
+    // ============================
+    // Section collapse
+    // ============================
+    document.querySelectorAll('.section-header').forEach(hdr => {
+      hdr.addEventListener('click', (e) => {
+        if (e.target.closest('.section-toggle')) return;
+        hdr.closest('.section').classList.toggle('open');
+      });
+    });
+
+    // ============================
+    // Effect toggles
+    // ============================
+    const fxMap = {
+      'fx-outline': {
+        key: 'outline',
+        on: () => {
+          h1.style.webkitTextStroke = document.getElementById('ctrl-stroke').value + 'px transparent';
+          h1.style.background = 'conic-gradient(from var(--angle,0deg),var(--color-1),var(--color-2),var(--color-1))';
+          h1.style.webkitBackgroundClip = 'text'; h1.style.backgroundClip = 'text';
+          rebuildAnimation();
+        },
+        off: () => {
+          h1.style.webkitTextStroke = '0'; h1.style.background = 'none';
+          h1.style.webkitBackgroundClip = 'unset'; h1.style.backgroundClip = 'unset';
+          rebuildAnimation();
+        }
+      },
+      'fx-shadows': {
+        key: 'shadows',
+        on: () => { updateShadows(); },
+        off: () => { h1.style.textShadow = 'none'; }
+      },
+      'fx-glitch': { key: 'glitch', on: () => { glitch1.style.opacity = S.glitchIntensity; glitch2.style.opacity = S.glitchIntensity; }, off: () => { glitch1.style.opacity = 0; glitch2.style.opacity = 0; } },
+      'fx-chroma': { key: 'chroma', on: () => { chromaR.style.opacity = S.chromaOpacity; chromaB.style.opacity = S.chromaOpacity; }, off: () => { chromaR.style.opacity = 0; chromaB.style.opacity = 0; chromaR.style.transform = ''; chromaB.style.transform = ''; } },
+      'fx-scanlines': { key: 'scanlines', on: () => { scanlinesEl.style.opacity = 1; }, off: () => { scanlinesEl.style.opacity = 0; } },
+      'fx-flicker': { key: 'flicker', on: () => rebuildAnimation(), off: () => rebuildAnimation() },
+      'fx-glow': { key: 'glow', on: () => { glowPulse.classList.add('active'); }, off: () => { glowPulse.classList.remove('active'); glowPulse.style.opacity = 0; } },
+      'fx-noise': { key: 'noise', on: () => { noiseEl.style.opacity = S.noiseOpacity; }, off: () => { noiseEl.style.opacity = 0; } },
+      'fx-3d': { key: 'tilt3d', on: () => { }, off: () => { h1.style.transform = 'none'; } },
+      'fx-magnetic': { key: 'magnetic', on: () => { }, off: () => { targetTx = 0; targetTy = 0; } },
+      'fx-particles': { key: 'particles', on: () => { }, off: () => { particlesList.length = 0; } },
+    };
+
+    function toggleFx(id, force) {
+      const item = document.getElementById(id);
+      const cfg = fxMap[id];
+      const on = force !== undefined ? force : !S[cfg.key];
+      S[cfg.key] = on;
+      item.classList.toggle('active', on);
+      const sw = item.querySelector('.fx-switch');
+      if (on) { sw.style.background = 'rgba(255,255,255,0.2)'; cfg.on(); }
+      else { sw.style.background = ''; cfg.off(); }
+    }
+
+    document.querySelectorAll('.fx-item').forEach(item => {
+      item.querySelector('.fx-header').addEventListener('click', () => toggleFx(item.id));
+    });
+
+    // Outline anim toggle
+    const outlineAnimBtn = document.getElementById('toggle-outline-anim');
+    outlineAnimBtn.addEventListener('click', () => {
+      S.outlineAnimOn = !S.outlineAnimOn;
+      outlineAnimBtn.style.background = S.outlineAnimOn ? 'rgba(255,255,255,0.2)' : '';
+      rebuildAnimation();
+    });
+
+    // ============================
+    // Slider wiring (generic)
+    // ============================
+    function wire(id, valId, fmt, fn) {
+      document.getElementById(id).addEventListener('input', (e) => {
+        const v = parseFloat(e.target.value);
+        if (valId) document.getElementById(valId).textContent = fmt(v);
+        fn(v);
+      });
+    }
+
+    // Style
+    wire('ctrl-color1', null, null, v => { S.color1 = document.getElementById('ctrl-color1').value; root.style.setProperty('--color-1', S.color1); updateShadows(); });
+    wire('ctrl-color2', null, null, v => { S.color2 = document.getElementById('ctrl-color2').value; root.style.setProperty('--color-2', S.color2); updateShadows(); });
+    wire('ctrl-text-color', null, null, () => root.style.setProperty('--text-color', document.getElementById('ctrl-text-color').value));
+    wire('ctrl-bg-color', null, null, () => root.style.setProperty('--background-color', document.getElementById('ctrl-bg-color').value));
+    wire('ctrl-size', 'val-size', v => v + 'px', v => {
+      h1.style.fontSize = v + 'px';
+      [chromaR, chromaB, glitch1, glitch2].forEach(el => el.style.fontSize = v + 'px');
+    });
+
+    // Outline
+    wire('ctrl-stroke', 'val-stroke', v => v + 'px', v => { if (S.outline) h1.style.webkitTextStroke = v + 'px transparent'; });
+    wire('ctrl-speed', 'val-speed', v => v + 's', () => rebuildAnimation());
+
+    // Shadows
+    wire('ctrl-shadows', 'val-shadows', v => v, v => { S.shadowCount = v; updateShadows(); });
+    wire('ctrl-spread', 'val-spread', v => v.toFixed(1), v => { S.spread = v; updateShadows(); });
+    wire('ctrl-blur', 'val-blur', v => v + 'px', v => { S.blur = v; updateShadows(); });
+    wire('ctrl-fade', 'val-fade', v => v + '%', v => { S.fade = v; updateShadows(); });
+
+    // Effect params
+    wire('ctrl-glitch-intensity', 'val-glitch-intensity', v => v.toFixed(1), v => { S.glitchIntensity = v; if (S.glitch) { glitch1.style.opacity = v; glitch2.style.opacity = v; } });
+    wire('ctrl-glitch-speed', 'val-glitch-speed', v => v.toFixed(2) + 's', v => { S.glitchSpeed = v; glitch1.style.animationDuration = `3s,${v}s`; glitch2.style.animationDuration = `3s,${v}s`; });
+    wire('ctrl-chroma-strength', 'val-chroma-strength', v => v.toFixed(1), v => S.chromaStrength = v);
+    wire('ctrl-chroma-opacity', 'val-chroma-opacity', v => v.toFixed(1), v => { S.chromaOpacity = v; if (S.chroma) { chromaR.style.opacity = v; chromaB.style.opacity = v; } });
+    wire('ctrl-scanlines-opacity', 'val-scanlines-opacity', v => v.toFixed(2), v => {
+      S.scanlinesOpacity = v;
+      if (S.scanlines) scanlinesEl.style.background = `repeating-linear-gradient(0deg,transparent,transparent ${S.scanlinesGap / 2}px,rgba(0,0,0,${v}) ${S.scanlinesGap / 2}px,rgba(0,0,0,${v}) ${S.scanlinesGap}px)`;
+    });
+    wire('ctrl-scanlines-gap', 'val-scanlines-gap', v => v + 'px', v => {
+      S.scanlinesGap = v;
+      if (S.scanlines) scanlinesEl.style.background = `repeating-linear-gradient(0deg,transparent,transparent ${v / 2}px,rgba(0,0,0,${S.scanlinesOpacity}) ${v / 2}px,rgba(0,0,0,${S.scanlinesOpacity}) ${v}px)`;
+    });
+    wire('ctrl-flicker-speed', 'val-flicker-speed', v => v.toFixed(1) + 's', v => { S.flickerSpeed = v; if (S.flicker) rebuildAnimation(); });
+    wire('ctrl-glow-intensity', 'val-glow-intensity', v => v.toFixed(2), v => S.glowIntensity = v);
+    wire('ctrl-glow-speed', 'val-glow-speed', v => v.toFixed(1) + 's', v => { S.glowSpeed = v; glowPulse.style.animationDuration = v + 's'; });
+    wire('ctrl-glow-size', 'val-glow-size', v => v + 'px', v => { S.glowSize = v; glowPulse.style.filter = `blur(${v}px)`; });
+    wire('ctrl-noise-opacity', 'val-noise-opacity', v => v.toFixed(2), v => { S.noiseOpacity = v; if (S.noise) noiseEl.style.opacity = v; });
+    wire('ctrl-3d-range', 'val-3d-range', v => v + '\u00B0', v => S.tilt3dRange = v);
+    wire('ctrl-mag-strength', 'val-mag-strength', v => v, v => S.magStrength = v);
+    wire('ctrl-mag-radius', 'val-mag-radius', v => v + 'px', v => S.magRadius = v);
+    wire('ctrl-part-density', 'val-part-density', v => v, v => S.partDensity = v);
+    wire('ctrl-part-size', 'val-part-size', v => v + 'px', v => S.partSize = v);
+    wire('ctrl-part-life', 'val-part-life', v => v.toFixed(2), v => S.partLife = v);
+
+    // ============================
+    // Randomise on load
+    // ============================
+    function randomise() {
+      // Pick random colors
+      const randHex = () => '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
+      const c1 = randHex(), c2 = randHex();
+      S.color1 = c1; S.color2 = c2;
+      root.style.setProperty('--color-1', c1); root.style.setProperty('--color-2', c2);
+      document.getElementById('ctrl-color1').value = c1;
+      document.getElementById('ctrl-color2').value = c2;
+
+      // Randomly enable 2-4 effects
+      const fxIds = Object.keys(fxMap);
+      const shuffled = fxIds.sort(() => Math.random() - 0.5);
+      const count = 2 + Math.floor(Math.random() * 3);
+      shuffled.slice(0, count).forEach(id => toggleFx(id, true));
+
+      // Random text & background with guaranteed contrast
+      const darkPalette = ['#0a0a0a', '#0d0d0d', '#111111', '#0a0a12', '#0c0a10', '#080810', '#0a0c14', '#121212', '#1a1a2e', '#16213e'];
+      const lightPalette = ['#f0f0f0', '#e8e8e8', '#ffffff', '#f5f0ff', '#f0f5ff', '#fff5f0', '#e8f0e8', '#f0e8f5', '#dde4ea', '#eae0d5'];
+      const useDarkBg = Math.random() > 0.3; // 70% dark bg, 30% light bg
+      const bg = useDarkBg
+        ? darkPalette[Math.floor(Math.random() * darkPalette.length)]
+        : lightPalette[Math.floor(Math.random() * lightPalette.length)];
+      const txt = useDarkBg
+        ? darkPalette[Math.floor(Math.random() * darkPalette.length)]
+        : lightPalette[Math.floor(Math.random() * lightPalette.length)];
+      root.style.setProperty('--background-color', bg);
+      root.style.setProperty('--text-color', txt);
+      document.getElementById('ctrl-bg-color').value = bg;
+      document.getElementById('ctrl-text-color').value = txt;
+
+      // Random shadow params
+      S.shadowCount = 2 + Math.floor(Math.random() * 4);
+      S.spread = +(0.5 + Math.random() * 1.5).toFixed(1);
+      S.blur = Math.floor(Math.random() * 10);
+      document.getElementById('ctrl-shadows').value = S.shadowCount;
+      document.getElementById('val-shadows').textContent = S.shadowCount;
+      document.getElementById('ctrl-spread').value = S.spread;
+      document.getElementById('val-spread').textContent = S.spread.toFixed(1);
+      document.getElementById('ctrl-blur').value = S.blur;
+      document.getElementById('val-blur').textContent = S.blur + 'px';
+      updateShadows();
+    }
+
+    randomise();
+  </script>
+</body>
+
+</html>
