@@ -299,10 +299,54 @@
     }
     h1.addEventListener('input', syncText);
 
+    // ============================
+    // Safari @property fallback
+    // ============================
+    // Detect if CSS @property is supported (Safari < 15.4 doesn't support it)
+    const supportsAtProperty = CSS && CSS.registerProperty;
+    let jsFallbackAngle = 0;
+    let jsFallbackRunning = false;
+
+    function startJsFallbackRotation() {
+      if (supportsAtProperty || jsFallbackRunning) return;
+      jsFallbackRunning = true;
+      let lastTime = performance.now();
+      (function tick(now) {
+        if (!jsFallbackRunning) return;
+        const speed = parseFloat(document.getElementById('ctrl-speed').value) || 3;
+        const dt = (now - lastTime) / 1000;
+        lastTime = now;
+        jsFallbackAngle = (jsFallbackAngle + (360 / speed) * dt) % 360;
+        const grad = `conic-gradient(from ${jsFallbackAngle}deg, var(--color-1), var(--color-2), var(--color-1))`;
+        // Apply to all elements that use the gradient
+        if (S.outline) {
+          h1.style.background = grad;
+          h1.style.webkitBackgroundClip = 'text';
+          h1.style.backgroundClip = 'text';
+        }
+        [glitch1, glitch2, chromaR, chromaB].forEach(el => {
+          el.style.background = grad;
+          el.style.webkitBackgroundClip = 'text';
+          el.style.backgroundClip = 'text';
+        });
+        requestAnimationFrame(tick);
+      })(performance.now());
+    }
+
+    function stopJsFallbackRotation() {
+      jsFallbackRunning = false;
+    }
+
     function rebuildAnimation() {
       const parts = [];
       if (S.outline && S.outlineAnimOn) {
-        parts.push(`rotate-gradient ${document.getElementById('ctrl-speed').value}s linear infinite`);
+        if (supportsAtProperty) {
+          parts.push(`rotate-gradient ${document.getElementById('ctrl-speed').value}s linear infinite`);
+        } else {
+          startJsFallbackRotation();
+        }
+      } else {
+        if (!supportsAtProperty) stopJsFallbackRotation();
       }
       if (S.flicker) parts.push(`flicker ${S.flickerSpeed}s infinite`);
       h1.style.animation = parts.length ? parts.join(', ') : 'none';
@@ -322,49 +366,111 @@
     }
 
     // ============================
-    // Mouse
+    // Input handling (mouse + gyro + touch)
     // ============================
-    document.addEventListener('mousemove', (e) => {
-      const rect = h1.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
-      lastDx = (e.clientX - cx) / window.innerWidth * 20;
-      lastDy = (e.clientY - cy) / window.innerHeight * 20;
-      updateShadows();
+    const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    let gyroAvailable = false;
 
+    // Shared update function driven by lastDx/lastDy
+    function applyInputEffects() {
+      updateShadows();
       if (S.chroma) {
         const ox = lastDx * S.chromaStrength, oy = lastDy * S.chromaStrength;
         chromaR.style.transform = `translate(${ox}px,${oy}px)`;
         chromaB.style.transform = `translate(${-ox}px,${-oy}px)`;
       }
       if (S.tilt3d) {
-        const rx = -(e.clientY - cy) / window.innerHeight * S.tilt3dRange;
-        const ry = (e.clientX - cx) / window.innerWidth * S.tilt3dRange;
+        const rx = -lastDy / 20 * S.tilt3dRange;
+        const ry = lastDx / 20 * S.tilt3dRange;
         h1.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
       }
       if (S.magnetic) {
-        const dx = cx - e.clientX, dy = cy - e.clientY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < S.magRadius) {
-          const str = (1 - dist / S.magRadius) * S.magStrength;
-          targetTx = -(dx / dist) * str; targetTy = -(dy / dist) * str;
+        const mag = Math.sqrt(lastDx * lastDx + lastDy * lastDy);
+        if (mag > 0.5) {
+          const str = Math.min(mag / 10, 1) * S.magStrength;
+          targetTx = (lastDx / mag) * str;
+          targetTy = (lastDy / mag) * str;
         } else { targetTx = 0; targetTy = 0; }
       } else { targetTx = 0; targetTy = 0; }
+    }
 
-      if (S.particles) {
-        for (let i = 0; i < S.partDensity; i++) {
-          const se = S.shadowCount * S.spread;
-          particlesList.push({
-            x: rect.left + rect.width / 2 + lastDx * se * (1 + Math.random()),
-            y: rect.top + rect.height / 2 + lastDy * se * (1 + Math.random()),
-            vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2 - 1,
-            life: S.partLife, maxLife: S.partLife,
-            decay: 0.01 + Math.random() * 0.02,
-            size: 1 + Math.random() * S.partSize,
-            color: Math.random() > 0.5 ? S.color1 : S.color2,
-          });
-        }
+    function spawnParticles() {
+      if (!S.particles) return;
+      const rect = h1.getBoundingClientRect();
+      for (let i = 0; i < S.partDensity; i++) {
+        const se = S.shadowCount * S.spread;
+        particlesList.push({
+          x: rect.left + rect.width / 2 + lastDx * se * (1 + Math.random()),
+          y: rect.top + rect.height / 2 + lastDy * se * (1 + Math.random()),
+          vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2 - 1,
+          life: S.partLife, maxLife: S.partLife,
+          decay: 0.01 + Math.random() * 0.02,
+          size: 1 + Math.random() * S.partSize,
+          color: Math.random() > 0.5 ? S.color1 : S.color2,
+        });
       }
+    }
+
+    // Mouse input (desktop)
+    document.addEventListener('mousemove', (e) => {
+      const rect = h1.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+      lastDx = (e.clientX - cx) / window.innerWidth * 20;
+      lastDy = (e.clientY - cy) / window.innerHeight * 20;
+      applyInputEffects();
+      spawnParticles();
     });
+
+    // Touch input (mobile fallback for particles + effects)
+    document.addEventListener('touchmove', (e) => {
+      if (gyroAvailable) return; // gyro handles dx/dy
+      const touch = e.touches[0];
+      const rect = h1.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+      lastDx = (touch.clientX - cx) / window.innerWidth * 20;
+      lastDy = (touch.clientY - cy) / window.innerHeight * 20;
+      applyInputEffects();
+      spawnParticles();
+    }, { passive: true });
+
+    // Gyroscope input (mobile — maps device tilt to lastDx/lastDy)
+    let gyroX = 0, gyroY = 0;
+
+    function initGyro() {
+      window.addEventListener('deviceorientation', (e) => {
+        if (e.gamma === null && e.beta === null) return;
+        gyroAvailable = true;
+        // gamma = left-right tilt (-90 to 90), beta = front-back tilt (-180 to 180)
+        // Map to similar range as mouse (-20 to 20)
+        gyroX = (e.gamma || 0) / 90 * 20;   // left/right → horizontal
+        gyroY = ((e.beta || 0) - 45) / 90 * 20; // front/back → vertical (offset 45° for natural hold)
+        // Clamp
+        gyroX = Math.max(-20, Math.min(20, gyroX));
+        gyroY = Math.max(-20, Math.min(20, gyroY));
+        // Smooth
+        lastDx += (gyroX - lastDx) * 0.15;
+        lastDy += (gyroY - lastDy) * 0.15;
+        applyInputEffects();
+        spawnParticles();
+      }, true);
+    }
+
+    // iOS 13+ requires permission for DeviceOrientation
+    if (isMobile) {
+      if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+        // iOS — request on first touch
+        document.addEventListener('touchstart', function requestGyro() {
+          DeviceOrientationEvent.requestPermission()
+            .then(state => { if (state === 'granted') initGyro(); })
+            .catch(() => { });
+          document.removeEventListener('touchstart', requestGyro);
+        }, { once: true });
+      } else {
+        // Android and others — just init
+        initGyro();
+      }
+    }
 
     // Magnetic loop
     (function magLoop() {
